@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
-//Schema
+//schema
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -28,8 +28,7 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-//! Hash user password before saving:
+//! Hash user password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
