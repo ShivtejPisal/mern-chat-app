@@ -7,6 +7,7 @@ const socketio = require("socket.io");
 const userRouter = require("./routes/userRoutes");
 const socketIo = require("./socket");
 const groupRouter = require("./routes/groupRoutes");
+const messageRouter = require("./routes/messageRoutes");
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ socketIo(io);
 // Routes
 app.use("/api/users", userRouter);
 app.use("/api/groups", groupRouter);
+app.use("/api/messages", messageRouter);
 
 // Start the server
 const PORT = process.env.PORT || 5000;
