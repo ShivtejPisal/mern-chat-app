@@ -35,4 +35,26 @@ groupRouter.get("/", protect, async (req, res) => {
   }
 });
 
+//Join group
+groupRouter.post("/:groupId/join", protect, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.groupId);
+    console.log(group);
+
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    if (group.members.includes(req.user._id)) {
+      return res.status(400).json({
+        message: "Already a member of this group",
+      });
+    }
+    group.members.push(req.user._id);
+    await group.save();
+    res.json({ message: "Successfully joined this group" });
+  } catch (error) {
+    res.status(400).json.message({ message: error });
+  }
+});
+
 module.exports = groupRouter;
