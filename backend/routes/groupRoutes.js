@@ -23,4 +23,16 @@ groupRouter.post("/", protect, isAdmin, async (req, res) => {
   }
 });
 
+//get all groups
+groupRouter.get("/", protect, async (req, res) => {
+  try {
+    const groups = await Group.find()
+      .populate("admin", "username email")
+      .populate("members", "username email");
+    res.json(groups);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 module.exports = groupRouter;
