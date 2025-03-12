@@ -57,4 +57,27 @@ groupRouter.post("/:groupId/join", protect, async (req, res) => {
   }
 });
 
+//Leave group
+groupRouter.post("/:groupId/leave", protect, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.groupId);
+
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    if (!group.members.includes(req.user.id)) {
+      return res
+        .status(400)
+        .json({ message: "You are not a member of this group" });
+    }
+    group.members = group.members.filter(
+      (memberId) => memberId.toString() !== req.user._id.toString()
+    );
+    await group.save();
+    res.json({ message: "Successfully left the group" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 module.exports = groupRouter;
