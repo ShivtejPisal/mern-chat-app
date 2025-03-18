@@ -6,10 +6,49 @@ import {
   Input,
   VStack,
   Text,
+  useToast
 } from "@chakra-ui/react";
-import { Link } from "react-router-dom";
+import axios from "axios";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Register = () => {
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [username, setUser] = useState("");
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+  const navigate = useNavigate();
+
+  //handle submit (login)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data } = await axios.post(
+        "http://localhost:5000/api/users/register",
+        {
+          username,
+          email,
+          password,
+        }
+      );
+      console.log(data.user)
+
+      navigate("/login");
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.response.data.message || "An error occurred",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+    setLoading(false);
+  };
+
   return (
     <Box
       w="100%"
@@ -81,6 +120,8 @@ const Register = () => {
                 Username
               </FormLabel>
               <Input
+                value={username}
+                onChange={(e) => setUser(e.target.value)}
                 type="text"
                 size="lg"
                 bg="gray.50"
@@ -96,6 +137,8 @@ const Register = () => {
                 Email
               </FormLabel>
               <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 type="email"
                 size="lg"
                 bg="gray.50"
@@ -111,6 +154,8 @@ const Register = () => {
                 Password
               </FormLabel>
               <Input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 type="password"
                 size="lg"
                 bg="gray.50"
@@ -122,6 +167,8 @@ const Register = () => {
             </FormControl>
 
             <Button
+              onClick={handleSubmit}
+              isLoading={loading}
               colorScheme="purple"
               width="100%"
               transform="auto"
