@@ -24,10 +24,11 @@ import { FiLogOut, FiPlus, FiUsers } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-const Sidebar = () => {
+const Sidebar = ({setSelectedGroup}) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [newGroupName, setNewGroupName] = useState("");
   const [groups, setGroups] = useState([]);
+  const [userGroups, setUserGroups] = useState([]);
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const[isAdmin, setIsAdmin] = useState(false);
   const toast = useToast();
@@ -56,38 +57,19 @@ const Sidebar = () => {
         },
       });
       setGroups(data);
+      //set user groups
+      const userGroupIds = data
+        ?.filter((group) => {
+          return group?.members?.some(
+            (member) => member?._id === userInfo?._id
+          );
+        })
+        .map((group) => group?._id);
+      setUserGroups(userGroupIds);
     } catch (error) {
-      
+      console.log(error);
     }
   }
-  //fetch user groups
-  //Create groups
-  //logout
-  //join group
-  //leave group
-
-
-  // Sample groups data
-  // const groups = [
-  //   {
-  //     id: 1,
-  //     name: "Development Team",
-  //     description: "Main development team channel for daily updates",
-  //     isJoined: true,
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Design Team",
-  //     description: "Collaboration space for designers",
-  //     isJoined: false,
-  //   },
-  //   {
-  //     id: 3,
-  //     name: "Marketing",
-  //     description: "Marketing team discussions and campaigns",
-  //     isJoined: true,
-  //   },
-  // ];
 
   return (
     <Box
@@ -140,9 +122,11 @@ const Sidebar = () => {
               p={4}
               cursor="pointer"
               borderRadius="lg"
-              bg={group.isJoined ? "blue.50" : "gray.50"}
+              bg={userGroups.includes(group?._id) ? "blue.50" : "gray.50"}
               borderWidth="1px"
-              borderColor={group.isJoined ? "blue.200" : "gray.200"}
+              borderColor={
+                userGroups.includes(group?._id) ? "blue.200" : "gray.200"
+              }
               transition="all 0.2s"
               _hover={{
                 transform: "translateY(-2px)",
@@ -151,12 +135,15 @@ const Sidebar = () => {
               }}
             >
               <Flex justify="space-between" align="center">
-                <Box flex="1">
+                <Box onClick={
+                  () => userGroups.includes(groups?._id) && setSelectedGroup(group)
+                }
+                flex="1">
                   <Flex align="center" mb={2}>
                     <Text fontWeight="bold" color="gray.800">
                       {group.name}
                     </Text>
-                    {group.isJoined && (
+                    {userGroups.includes(group?._id) && (
                       <Badge ml={2} colorScheme="blue" variant="subtle">
                         Joined
                       </Badge>
@@ -177,7 +164,7 @@ const Sidebar = () => {
                   }}
                   transition="all 0.2s"
                 >
-                  {group.isJoined ? (
+                  {userGroups.includes(groups?._id) ?(
                     <Text fontSize="sm" fontWeight="medium">
                       Leave
                     </Text>
