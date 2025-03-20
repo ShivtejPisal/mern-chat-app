@@ -22,10 +22,12 @@ import {
 import { useEffect, useState } from "react";
 import { FiLogOut, FiPlus, FiUsers } from "react-icons/fi";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 const Sidebar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [newGroupName, setNewGroupName] = useState("");
+  const [groups, setGroups] = useState([]);
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const[isAdmin, setIsAdmin] = useState(false);
   const toast = useToast();
@@ -33,7 +35,8 @@ const Sidebar = () => {
 
   useEffect(() =>{
     checkAdminStatus();
-  })
+    fetchGroups();
+  },[]);
   //check if login user is an admin
 
   const checkAdminStatus = () => {
@@ -42,6 +45,21 @@ const Sidebar = () => {
     setIsAdmin(userInfo?.isAdmin || false);
   }
   //fetch all groups
+  const fetchGroups = async() => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const token = userInfo.token;
+
+      const { data } = await axios.get("http://localhost:5000/api/groups", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setGroups(data);
+    } catch (error) {
+      
+    }
+  }
   //fetch user groups
   //Create groups
   //logout
@@ -50,26 +68,26 @@ const Sidebar = () => {
 
 
   // Sample groups data
-  const groups = [
-    {
-      id: 1,
-      name: "Development Team",
-      description: "Main development team channel for daily updates",
-      isJoined: true,
-    },
-    {
-      id: 2,
-      name: "Design Team",
-      description: "Collaboration space for designers",
-      isJoined: false,
-    },
-    {
-      id: 3,
-      name: "Marketing",
-      description: "Marketing team discussions and campaigns",
-      isJoined: true,
-    },
-  ];
+  // const groups = [
+  //   {
+  //     id: 1,
+  //     name: "Development Team",
+  //     description: "Main development team channel for daily updates",
+  //     isJoined: true,
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Design Team",
+  //     description: "Collaboration space for designers",
+  //     isJoined: false,
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Marketing",
+  //     description: "Marketing team discussions and campaigns",
+  //     isJoined: true,
+  //   },
+  // ];
 
   return (
     <Box
