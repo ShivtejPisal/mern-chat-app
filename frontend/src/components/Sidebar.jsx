@@ -70,6 +70,45 @@ const Sidebar = ({setSelectedGroup}) => {
       console.log(error);
     }
   }
+  //create group
+  const handleCreateGroup = async () => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const token = userInfo.token;
+
+      await axios.post("http://localhost:5000/api/groups", {
+        name: newGroupName,
+        description: newGroupDescription,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      toast({
+        title: "Group created successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      onClose();
+      fetchGroups();
+      setNewGroupName("");
+      setNewGroupDescription("");
+    } catch (error) {
+      toast({
+        title: "Error Creating Group",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        description: error?.response?.data?.message || "An error occurred"
+      });
+    }
+  }
+  //logout
+  //join group
+  //leave group
+
+  //Sample groupn data
 
   return (
     <Box
@@ -238,17 +277,7 @@ const Sidebar = ({setSelectedGroup}) => {
               mr={3}
               mt={4}
               width="full"
-              onClick={() => {
-                toast({
-                  title: "Group created successfully",
-                  status: "success",
-                  duration: 3000,
-                  isClosable: true,
-                });
-                onClose();
-                setNewGroupName("");
-                setNewGroupDescription("");
-              }}
+              onClick={handleCreateGroup}
             >
               Create Group
             </Button>
