@@ -21,32 +21,33 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { FiLogOut, FiPlus, FiUsers } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const Sidebar = ({setSelectedGroup}) => {
+const Sidebar = ({ setSelectedGroup }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [newGroupName, setNewGroupName] = useState("");
   const [groups, setGroups] = useState([]);
   const [userGroups, setUserGroups] = useState([]);
   const [newGroupDescription, setNewGroupDescription] = useState("");
-  const[isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const toast = useToast();
+  const navigate = useNavigate();
   // const isAdmin = true;
 
-  useEffect(() =>{
+  useEffect(() => {
     checkAdminStatus();
     fetchGroups();
-  },[]);
+  }, []);
   //check if login user is an admin
 
   const checkAdminStatus = () => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
     //update admin status
     setIsAdmin(userInfo?.isAdmin || false);
-  }
+  };
   //fetch all groups
-  const fetchGroups = async() => {
+  const fetchGroups = async () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
       const token = userInfo.token;
@@ -69,21 +70,25 @@ const Sidebar = ({setSelectedGroup}) => {
     } catch (error) {
       console.log(error);
     }
-  }
+  };
   //create group
   const handleCreateGroup = async () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
       const token = userInfo.token;
 
-      await axios.post("http://localhost:5000/api/groups", {
-        name: newGroupName,
-        description: newGroupDescription,
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      await axios.post(
+        "http://localhost:5000/api/groups",
+        {
+          name: newGroupName,
+          description: newGroupDescription,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       toast({
         title: "Group created successfully",
         status: "success",
@@ -100,15 +105,85 @@ const Sidebar = ({setSelectedGroup}) => {
         status: "error",
         duration: 3000,
         isClosable: true,
-        description: error?.response?.data?.message || "An error occurred"
+        description: error?.response?.data?.message || "An error occurred",
       });
     }
-  }
+  };
   //logout
   //join group
-  //leave group
+  const handleJoinGroup = async (groupId) => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const token = userInfo.token;
 
-  //Sample groupn data
+      await axios.post(
+        `http://localhost:5000/api/groups/${groupId}/join`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      fetchGroups();
+      setSelectedGroup(groups.find((g) => g?._id === groupId));
+      toast({
+        title: "Joined group successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: "Error Joining Group",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        description: error?.response?.data?.message || "An error occurred",
+      });
+    }
+  };
+  //leave group
+  const handleLeaveGroup = async (groupId) => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const token = userInfo.token;
+
+      await axios.post(
+        `http://localhost:5000/api/groups/${groupId}/leave`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      fetchGroups();
+      setSelectedGroup(null);
+      toast({
+        title: "left group successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: "Error Leaving Group",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        description: error?.response?.data?.message || "An error occurred",
+      });
+    }
+  };
+
+  //logout
+  const handleLogout = async () => {
+    localStorage.removeItem("userInfo");
+    navigate("/login");
+  };
+
+  //Sample group data
 
   return (
     <Box
@@ -174,10 +249,12 @@ const Sidebar = ({setSelectedGroup}) => {
               }}
             >
               <Flex justify="space-between" align="center">
-                <Box onClick={
-                  () => userGroups.includes(groups?._id) && setSelectedGroup(group)
-                }
-                flex="1">
+                <Box
+                  onClick={() =>
+                    userGroups.includes(groups?._id) && setSelectedGroup(group)
+                  }
+                  flex="1"
+                >
                   <Flex align="center" mb={2}>
                     <Text fontWeight="bold" color="gray.800">
                       {group.name}
@@ -194,16 +271,23 @@ const Sidebar = ({setSelectedGroup}) => {
                 </Box>
                 <Button
                   size="sm"
-                  colorScheme={group.isJoined ? "red" : "blue"}
-                  variant={group.isJoined ? "ghost" : "solid"}
+                  colorScheme={
+                    userGroups?.includes(group?._id) ? "red" : "blue"
+                  }
+                  variant={userGroups?.includes(group?._id) ? "ghost" : "solid"}
                   ml={3}
+                  onClick={() => {
+                    userGroups?.includes(group?._id)
+                      ? handleLeaveGroup(group?._id)
+                      : handleJoinGroup(group?._id);
+                  }}
                   _hover={{
                     transform: group.isJoined ? "scale(1.05)" : "none",
-                    bg: group.isJoined ? "red.50" : "blue.600",
+                    bg: group.isJoined ? "red.50" : "white.600",
                   }}
                   transition="all 0.2s"
                 >
-                  {userGroups.includes(groups?._id) ?(
+                  {userGroups.includes(group?._id) ? (
                     <Text fontSize="sm" fontWeight="medium">
                       Leave
                     </Text>
@@ -229,9 +313,7 @@ const Sidebar = ({setSelectedGroup}) => {
         width="100%"
       >
         <Button
-          as={Link}
-          to="/login"
-          width="full"
+          onClick={handleLogout}
           variant="ghost"
           colorScheme="red"
           leftIcon={<Icon as={FiLogOut} />}

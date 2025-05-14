@@ -1,10 +1,11 @@
 const express = require("express");
 const Group = require("../models/GroupModel");
 const { protect, isAdmin } = require("../middleware/authMiddleware");
+const { trusted } = require("mongoose");
 
 const groupRouter = express.Router();
 
-//Create a new Group
+//Create a new group
 groupRouter.post("/", protect, isAdmin, async (req, res) => {
   try {
     const { name, description } = req.body;
@@ -19,6 +20,8 @@ groupRouter.post("/", protect, isAdmin, async (req, res) => {
       .populate("members", "username email");
     res.status(201).json({ populatedGroup });
   } catch (error) {
+    console.log(error);
+
     res.status(400).json({ message: error.message });
   }
 });
@@ -39,7 +42,6 @@ groupRouter.get("/", protect, async (req, res) => {
 groupRouter.post("/:groupId/join", protect, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId);
-    console.log(group);
 
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
@@ -53,26 +55,23 @@ groupRouter.post("/:groupId/join", protect, async (req, res) => {
     await group.save();
     res.json({ message: "Successfully joined this group" });
   } catch (error) {
-    res.status(400).json.message({ message: error });
+    res.status(400).json({ message: error.message });
   }
 });
 
-//Leave group
+//leave a group
 groupRouter.post("/:groupId/leave", protect, async (req, res) => {
   try {
     const group = await Group.findById(req.params.groupId);
-
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
     }
-    if (!group.members.includes(req.user.id)) {
-      return res
-        .status(400)
-        .json({ message: "You are not a member of this group" });
+    if (!group.members.includes(req.user._id)) {
+      return res.status(400).json({ message: "Not a member of this group" });
     }
-    group.members = group.members.filter(
-      (memberId) => memberId.toString() !== req.user._id.toString()
-    );
+    group.members = group.members.filter((memberId) => {
+      return memberId.toString() !== req.user._id.toString();
+    });
     await group.save();
     res.json({ message: "Successfully left the group" });
   } catch (error) {

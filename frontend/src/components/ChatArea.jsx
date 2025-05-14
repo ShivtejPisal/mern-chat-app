@@ -10,11 +10,100 @@ import {
   Avatar,
   InputGroup,
   InputRightElement,
+  useToast,
 } from "@chakra-ui/react";
 import { FiSend, FiInfo, FiMessageCircle } from "react-icons/fi";
 import UsersList from "./UsersList";
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 
-const ChatArea = () => {
+const ChatArea = ({ selectedGroup, socket }) => {
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [connectedUsers, setConnectedUsers] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState(new Set()); //no duplicate values are stored.
+  const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const toast = useToast();
+
+  const currentUser = JSON.parse(localStorage.getItem("userInfo") || "{}");
+
+  useEffect(() => {
+    if (selectedGroup && socket) {
+      //fetch messages
+      fetchMessages();
+      socket.emit("join room", selectedGroup?._id);
+      socket.on("message received", (newMessage) => {
+        setMessages((prev) => [...prev, newMessage]);
+      });
+
+      socket.on("users in room", (users) => {
+        setConnectedUsers(users);
+      });
+
+      socket.on("user joined", (user) => {
+        setConnectedUsers((prev) => [...prev, user]);
+      });
+
+      socket.on("user left", (userId) => {
+        setConnectedUsers((prev) =>
+          prev.filter((user) => user?._id !== userId)
+        );
+      });
+
+      socket.on("notification", (notification) => {
+        toast({
+          title:
+            notification?.type === "USER_JOINED" ? "New User" : "Notification",
+          description: notification.message,
+          status: "info",
+          duration: 3000,
+          isClosable: true,
+          position: "top-right",
+        });
+      });
+
+      socket.on("user typing", ({ username }) => {
+        setTypingUsers((prev) => new Set(prev).add(username));
+      });
+
+      socket.on("user stop typing", ({ username }) => {
+        setTypingUsers((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(username);
+          return newSet;
+        });
+      });
+      return () => {
+        socket.emit("leave room", selectedGroup?._id);
+        socket.off("message received");
+        socket.off("users in room");
+        socket.off("user joined");
+        socket.off("user left");
+        socket.off("notification");
+        socket.off("user typing");
+        socket.off("user stop typing");
+      };
+    }
+  }, [selectedGroup, socket, toast]);
+
+  //fetch messages
+  const fetchMessages = async () => {
+    const currentUser = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    const token = currentUser?.token;
+    try {
+      const { data } = await axios.get(
+        `http://localhost:5000/api/messages/${selectedGroup?._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   // Sample data for demonstration
   const sampleMessages = [
     {
@@ -189,6 +278,7 @@ const ChatArea = () => {
         </Box>
       </Box>
 
+
       {/* UsersList with fixed width */}
       <Box
         width="260px"
@@ -198,7 +288,7 @@ const ChatArea = () => {
         height="100%"
         flexShrink={0}
       >
-        <UsersList users={sampleUsers} />
+        {selectedGroup && <UsersList users={connectedUsers} />}
       </Box>
     </Flex>
   );
